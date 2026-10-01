@@ -187,6 +187,8 @@ VanillaContainer = card_tiers[0]:1:1
 
 - `,` chains fallbacks; `;` separates independent draws within one family.
 - A draw targets a list (`name[i]`) or directly an item entry: `<list or item>:<quantity>:<chance>`.
+- The quantity of a draw on a list is that many distinct draws in the list, each giving one item
+  (`card_tiers[0]:3:5`: three cards, each drawn on its own); on an item, that many of the item.
 - Lists and drops carry the module's prefix, in **that module's** `.conf`: for the Tarot,
   `mod-stellar-tarot.conf`.
 
