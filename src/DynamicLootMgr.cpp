@@ -18,9 +18,16 @@
 #include "DynamicLootMgr.h"
 
 #include "Config.h"
+#include "Creature.h"
 #include "DynamicLootFamilies.h"
+#include "DynamicLootSource.h"
+#include "Formulas.h"
 #include "Log.h"
+#include "LootMgr.h"
+#include "ObjectAccessor.h"
 #include "ObjectMgr.h"
+#include "Player.h"
+#include "Random.h"
 
 #include <algorithm>
 #include <cctype>
@@ -30,6 +37,9 @@
 namespace
 {
     std::string const LOOT_MARK = ".Loot.";
+
+    // A boss whose level is grey for the player has its chances divided by this.
+    constexpr float GREY_BOSS_DIVISOR = 5.0f;
 
     std::string Trimmed(std::string const& s)
     {
@@ -277,6 +287,41 @@ namespace
         }
         return module;
     }
+
+    void AddToLoot(Loot* loot, uint32 item, uint8 count, DynamicLootModule const& module, uint32 family)
+    {
+        // Past the loot window's size, Loot::AddItem gives up silently.
+        if (loot->items.size() >= MAX_NR_LOOT_ITEMS)
+        {
+            LOG_DEBUG("module", "DynamicLoot: loot full, {} from {} ({}) not added.", item, module.name,
+                DynamicLootFamilyAt(family).name);
+            return;
+        }
+        loot->AddItem(LootStoreItem(item, 0, 100.0f, false, LOOT_MODE_DEFAULT, 0, count, count));
+        LOG_DEBUG("module", "DynamicLoot: {} x{} from {} ({}).", item, count, module.name,
+            DynamicLootFamilyAt(family).name);
+    }
+
+    // A draw on a list is that many distinct draws in the list, one item each; on an item, that many of it.
+    void Place(Loot* loot, DynamicLootModule const& module, DynamicLootDraw const& draw, uint32 family)
+    {
+        if (draw.list < 0)
+        {
+            AddToLoot(loot, draw.item, draw.quantity, module, family);
+            return;
+        }
+        std::vector<uint32> const& list = module.lists[draw.list];
+        for (uint8 i = 0; i < draw.quantity; ++i)
+            AddToLoot(loot, list[urand(0, uint32(list.size()) - 1)], 1, module, family);
+    }
+
+    // The loot of an item in the bags has no world object for a source.
+    Creature* CreatureSource(Loot* loot, Player* player)
+    {
+        if (!loot->sourceWorldObjectGUID.IsCreature())
+            return nullptr;
+        return ObjectAccessor::GetCreature(*player, loot->sourceWorldObjectGUID);
+    }
 }
 
 DynamicLootMgr* DynamicLootMgr::instance()
@@ -313,6 +358,54 @@ void DynamicLootMgr::Load()
             module.noPity.size());
     }
 
+    _byFamily.assign(DynamicLootFamilyCount(), {});
+    for (uint32 m = 0; m < _modules.size(); ++m)
+        for (uint32 l = 0; l < _modules[m].lines.size(); ++l)
+            _byFamily[_modules[m].lines[l].family].emplace_back(m, l);
+
     LOG_INFO("module", "DynamicLoot: {} families known; {} module(s) declare loot, {} line(s) read.",
         DynamicLootFamilyCount(), _modules.size(), lines);
+}
+
+void DynamicLootMgr::Fill(Loot* loot, LootStore const& store, Player* player)
+{
+    // Every loot of the server comes through here: the store is tested first.
+    if (&store != &LootTemplates_Creature || !loot || !player || _modules.empty())
+        return;
+
+    Creature* creature = CreatureSource(loot, player);
+    if (!creature)
+        return;
+
+    DynamicLootContext context;
+    DynamicLootFillCreature(context, player, creature);
+
+    float const factor = context.boss && context.level <= Acore::XP::GetGrayLevel(player->GetLevel())
+        ? 1.0f / GREY_BOSS_DIVISOR : 1.0f;
+
+    // A creature belongs to one family of the first filter and to one level bracket.
+    PlayFamily(loot, DynamicLootCreatureFamily(context), factor);
+    PlayFamily(loot, DynamicLootLevelBracket(context.level), factor);
+}
+
+void DynamicLootMgr::PlayFamily(Loot* loot, uint32 family, float factor)
+{
+    if (family >= _byFamily.size())
+        return;
+
+    for (auto const& [m, l] : _byFamily[family])
+    {
+        DynamicLootModule const& module = _modules[m];
+        for (DynamicLootChain const& chain : module.lines[l].chains)
+            for (DynamicLootDraw const& draw : chain)
+            {
+                if (draw.chance <= 0.0f)
+                    continue;   // never: on to the next fallback
+                if (roll_chance_f(draw.chance * module.rate * factor))
+                {
+                    Place(loot, module, draw, family);
+                    break;      // the first success stops the chain
+                }
+            }
+    }
 }

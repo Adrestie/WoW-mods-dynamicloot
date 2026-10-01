@@ -39,7 +39,12 @@
 
 #include <string>
 #include <unordered_set>
+#include <utility>
 #include <vector>
+
+class Loot;
+class LootStore;
+class Player;
 
 struct DynamicLootDraw
 {
@@ -79,8 +84,16 @@ public:
 
     std::vector<DynamicLootModule> const& Modules() const { return _modules; }
 
+    // Called for every loot the server fills; adds what the families of its source drop.
+    void Fill(Loot* loot, LootStore const& store, Player* player);
+
 private:
+    // Plays every line of every module on that family; factor multiplies every chance.
+    void PlayFamily(Loot* loot, uint32 family, float factor);
+
     std::vector<DynamicLootModule> _modules;
+    // By family: (module index, line index) of every line on it.
+    std::vector<std::vector<std::pair<uint32, uint32>>> _byFamily;
 };
 
 #define sDynamicLootMgr DynamicLootMgr::instance()

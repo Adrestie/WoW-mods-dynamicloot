@@ -10,11 +10,13 @@ skinning, chests, inventory containers), places the items, and holds the grey
 boss brake and a bad luck protection shared by all modules. A module that uses it
 only says, in its own `.conf`, what drops in which family and at what chance.
 
-**In progress: no loot is placed yet.** The design is settled and written down
-in [docs/SPECIFICATION.md](docs/SPECIFICATION.md): the 53 families and the level
+**In progress.** The design is settled and written down in
+[docs/SPECIFICATION.md](docs/SPECIFICATION.md): the 53 families and the level
 brackets, what a module declares and how, the mechanisms, and the form of the
 extension. So far DynamicLoot reads and checks every module's declarations when
-the server starts, and reports what it cannot read.
+the server starts, reports what it cannot read, and places their loot on
+creatures (first filter and level brackets, rate factor, grey boss brake). Still
+to come: the bad luck protection, gathering, skinning, chests and containers.
 
 Original module, GPL-2.0-or-later, the licence of AzerothCore it is compiled
 into.

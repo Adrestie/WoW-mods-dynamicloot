@@ -34,7 +34,25 @@ public:
     }
 };
 
+// The items are added to the loot being filled, right after its template and before group
+// rights and quality thresholds: nothing in the loot tables of the database changes.
+class DynamicLootMiscScript : public MiscScript
+{
+public:
+    DynamicLootMiscScript() : MiscScript("DynamicLootMiscScript",
+        {
+            MISCHOOK_ON_AFTER_LOOT_TEMPLATE_PROCESS
+        }) { }
+
+    void OnAfterLootTemplateProcess(Loot* loot, LootTemplate const* /*tab*/, LootStore const& store,
+        Player* lootOwner, bool /*personal*/, bool /*noEmptyError*/, uint16 /*lootMode*/) override
+    {
+        sDynamicLootMgr->Fill(loot, store, lootOwner);
+    }
+};
+
 void AddSC_dynamicloot_scripts()
 {
     new DynamicLootWorldScript();
+    new DynamicLootMiscScript();
 }
