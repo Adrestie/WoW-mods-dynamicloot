@@ -2,6 +2,7 @@
   "format": "wow-mods-installer/1",
   "module": "dynamicloot",
   "title": "DynamicLoot",
+  "fields": {"worldserver": "required", "sources": "required"},
   "signature": [
     "src/dynamicloot_loader.cpp"
   ],
