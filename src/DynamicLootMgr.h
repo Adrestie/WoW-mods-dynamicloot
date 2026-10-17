@@ -51,6 +51,7 @@
 #include <vector>
 
 class Loot;
+struct DynamicLootContext;
 class LootStore;
 class Player;
 
@@ -106,6 +107,10 @@ private:
     void FillCreature(Loot* loot, Player* player);
     void FillSkinning(Loot* loot, Player* player);
     void FillGameObject(Loot* loot, Player* player);
+    void FillItem(Loot* loot, Player* player);
+
+    // A creature's kill, or its boss chest: family and level bracket, grey boss brake, protection.
+    void PlayKill(Loot* loot, Player* player, DynamicLootContext const& context, uint32 family);
 
     // What the draws of one loot gave.
     struct Outcome

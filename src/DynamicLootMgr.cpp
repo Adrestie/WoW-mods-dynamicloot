@@ -20,9 +20,11 @@
 #include "Config.h"
 #include "Creature.h"
 #include "DynamicLootFamilies.h"
+#include "DynamicLootLists.h"
 #include "DynamicLootSource.h"
 #include "Formulas.h"
 #include "GameObject.h"
+#include "Item.h"
 #include "Log.h"
 #include "LootMgr.h"
 #include "ObjectAccessor.h"
@@ -359,10 +361,11 @@ namespace
         return ObjectAccessor::GetGameObject(*player, loot->sourceWorldObjectGUID);
     }
 
-    // A boss whose level is grey for the player has its chances divided.
+    // A boss whose level is grey for the player has its chances divided. Level 0: a boss chest
+    // whose boss is unknown, without a level hence without a brake.
     float GreyBossFactor(DynamicLootContext const& context, Player* player)
     {
-        return context.boss && context.level <= Acore::XP::GetGrayLevel(player->GetLevel())
+        return context.boss && context.level && context.level <= Acore::XP::GetGrayLevel(player->GetLevel())
             ? 1.0f / GREY_BOSS_DIVISOR : 1.0f;
     }
 }
@@ -376,6 +379,7 @@ DynamicLootMgr* DynamicLootMgr::instance()
 void DynamicLootMgr::Load()
 {
     _modules.clear();
+    DynamicLootLoadLists();
 
     // Every <Module>.Loot.<name> setting, whatever file holds it, by module.
     std::map<std::string, std::vector<std::string>> byModule;
@@ -416,15 +420,19 @@ void DynamicLootMgr::Fill(Loot* loot, LootStore const& store, Player* player)
     bool const creatureStore   = &store == &LootTemplates_Creature;
     bool const skinningStore   = &store == &LootTemplates_Skinning;
     bool const gameObjectStore = &store == &LootTemplates_Gameobject;
-    if ((!creatureStore && !skinningStore && !gameObjectStore) || !loot || !player || _modules.empty())
+    bool const itemStore       = &store == &LootTemplates_Item;
+    if ((!creatureStore && !skinningStore && !gameObjectStore && !itemStore) || !loot || !player
+        || _modules.empty())
         return;
 
     if (creatureStore)
         FillCreature(loot, player);
     else if (skinningStore)
         FillSkinning(loot, player);
-    else
+    else if (gameObjectStore)
         FillGameObject(loot, player);
+    else
+        FillItem(loot, player);
 }
 
 void DynamicLootMgr::FillCreature(Loot* loot, Player* player)
@@ -435,7 +443,11 @@ void DynamicLootMgr::FillCreature(Loot* loot, Player* player)
 
     DynamicLootContext context;
     DynamicLootFillCreature(context, player, creature);
+    PlayKill(loot, player, context, DynamicLootCreatureFamily(context));
+}
 
+void DynamicLootMgr::PlayKill(Loot* loot, Player* player, DynamicLootContext const& context, uint32 family)
+{
     float const factor = GreyBossFactor(context, player);
 
     // The protection feeds on world creatures (world bosses and rares included) and raid bosses;
@@ -449,8 +461,9 @@ void DynamicLootMgr::FillCreature(Loot* loot, Player* player)
 
     // A creature belongs to one family of the first filter and to one level bracket.
     Outcome outcome;
-    PlayFamily(loot, DynamicLootCreatureFamily(context), factor, bonus, outcome);
-    PlayFamily(loot, DynamicLootLevelBracket(context.level), factor, bonus, outcome);
+    PlayFamily(loot, family, factor, bonus, outcome);
+    if (context.level)
+        PlayFamily(loot, DynamicLootLevelBracket(context.level), factor, bonus, outcome);
     Settle(player, outcome, step);
 }
 
@@ -470,8 +483,7 @@ void DynamicLootMgr::FillSkinning(Loot* loot, Player* player)
     Settle(player, outcome, 0.0f);
 }
 
-// A herb or a vein. A node has no level, hence no brake; outside the protection, which only a win
-// touches here.
+// A herb, a vein or a chest of the closed lists.
 void DynamicLootMgr::FillGameObject(Loot* loot, Player* player)
 {
     GameObject* gameObject = GameObjectSource(loot, player);
@@ -481,7 +493,43 @@ void DynamicLootMgr::FillGameObject(Loot* loot, Player* player)
     DynamicLootContext context;
     DynamicLootFillGameObject(context, player, gameObject);
 
-    int32 const family = DynamicLootGatheringFamily(context);
+    // A node has no level, hence no brake; outside the protection, which only a win touches here.
+    int32 family = DynamicLootGatheringFamily(context);
+    if (family >= 0)
+    {
+        Outcome outcome;
+        PlayFamily(loot, uint32(family), 1.0f, 0.0f, outcome);
+        Settle(player, outcome, 0.0f);
+        return;
+    }
+
+    bool bossChest = false;
+    family = DynamicLootChestFamily(context, bossChest);
+    if (family < 0)
+        return;
+
+    // A boss's chest is its loot: played as the boss's kill would be.
+    if (bossChest)
+    {
+        PlayKill(loot, player, context, uint32(family));
+        return;
+    }
+
+    // A real chest: no level, outside the protection.
+    Outcome outcome;
+    PlayFamily(loot, uint32(family), 1.0f, 0.0f, outcome);
+    Settle(player, outcome, 0.0f);
+}
+
+// An item opened from the bags; its loot is stored with the item, ours with it. No level, outside
+// the protection.
+void DynamicLootMgr::FillItem(Loot* loot, Player* player)
+{
+    Item* item = loot->containerGUID ? player->GetItemByGuid(loot->containerGUID) : nullptr;
+    if (!item)
+        return;
+
+    int32 const family = DynamicLootContainerFamily(item->GetEntry());
     if (family < 0)
         return;
 

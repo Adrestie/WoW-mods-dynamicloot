@@ -18,7 +18,10 @@ the server starts, reports what it cannot read, and places their loot on
 creatures (first filter and level brackets, rate factor, grey boss brake), with
 the bad luck protection shared by all modules (`.dynamicloot pity` shows or sets
 it), on herbs and veins, on skinning and on the corpses gathered by herbalism,
-mining or engineering. Still to come: chests and inventory containers.
+mining or engineering, on the real chests and the boss chests, and on the
+inventory containers (closed lists in the code). Still to come: the
+`dependencies` key of the installer, and moving Spheregrid and the Stellar Tarot
+over to DynamicLoot.
 
 Original module, GPL-2.0-or-later, the licence of AzerothCore it is compiled
 into.
