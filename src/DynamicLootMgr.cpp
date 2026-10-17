@@ -459,8 +459,8 @@ void DynamicLootMgr::PlayKill(Loot* loot, Player* player, DynamicLootContext con
         step = PITY_RAID_STEP;
     float const bonus = step > 0.0f ? Pity(player) : 0.0f;
 
-    // A creature belongs to one family of the first filter and to one level bracket; a rare of a WotLK
-    // dungeon plays WotlkRare as well, as it would outside.
+    // A creature belongs to one family of the first filter and to one level bracket; a rare of a
+    // dungeon plays the Rare family of its expansion as well, as it would outside.
     Outcome outcome;
     PlayFamily(loot, family, factor, bonus, outcome);
     if (context.level)

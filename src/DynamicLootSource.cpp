@@ -143,11 +143,11 @@ uint32 DynamicLootLevelBracket(uint32 level)
 
 int32 DynamicLootDungeonRareFamily(DynamicLootContext const& c)
 {
-    if (c.expansion != 2 || !c.dungeon || c.raid)
+    if (!c.dungeon || c.raid)
         return -1;
     if (c.rank != CREATURE_ELITE_RARE && c.rank != CREATURE_ELITE_RAREELITE)
         return -1;
-    return DynamicLootFamilyIndex("WotlkRare");
+    return DynamicLootFamilyIndex(Expansion(c) + "Rare");
 }
 
 uint32 DynamicLootSkinningFamily(DynamicLootContext const& c)

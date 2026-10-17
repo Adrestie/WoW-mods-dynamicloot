@@ -16,14 +16,14 @@ expansion is the map's.
 |---|---|
 | VanillaWorld | creatures outside dungeons and raids, Vanilla maps |
 | VanillaWorldBoss | **(new)** world bosses, Vanilla maps |
-| VanillaRare | **(new)** rare creatures outside dungeons and raids, Vanilla maps |
+| VanillaRare | **(new)** rare creatures of Vanilla maps, outside dungeons and raids, and in dungeons (decided on 2026-10-17); never in raids |
 | VanillaDungeonTrash | non-boss creatures of Vanilla dungeons |
 | VanillaDungeonBoss | bosses of Vanilla dungeons |
 | VanillaRaidTrash | non-boss creatures of Vanilla raids |
 | VanillaRaidBoss | bosses of Vanilla raids |
 | BcWorld | creatures outside dungeons and raids, BC maps |
 | BcWorldBoss | **(new)** world bosses, BC maps |
-| BcRare | **(new)** rare creatures outside dungeons and raids, BC maps |
+| BcRare | **(new)** rare creatures of BC maps, outside dungeons and raids, and in dungeons normal and heroic (decided on 2026-10-17); never in raids |
 | BcDungeonTrash | non-boss creatures of BC dungeons (normal and heroic) |
 | BcDungeonBoss | bosses of BC dungeons (normal and heroic) |
 | BcRaidTrash | non-boss creatures of BC raids |
@@ -42,9 +42,9 @@ expansion is the map's.
 A world boss or a rare is read **before** the World family of its expansion: otherwise it would fall into
 it, as it does in Spheregrid today.
 
-A rare of a WotLK dungeon (rank rare or rare elite, normal or heroic) plays WotlkRare **in addition** to its
-dungeon family (WotlkDungeonTrash, WotlkHeroicTrash, or the boss family) and to its level bracket (decided on
-2026-10-17). VanillaRare and BcRare stay outside dungeons.
+A rare of a dungeon (rank rare or rare elite, normal or heroic) plays the Rare family of its expansion
+(VanillaRare, BcRare, WotlkRare) **in addition** to its dungeon family (DungeonTrash, HeroicTrash, or the boss
+family) and to its level bracket (decided on 2026-10-17).
 
 ## Creatures — second filter: level brackets (decided on 2026-10-01)
 
