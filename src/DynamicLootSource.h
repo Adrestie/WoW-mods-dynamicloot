@@ -57,9 +57,9 @@ uint32 DynamicLootCreatureFamily(DynamicLootContext const& context);
 // The creature's level bracket (an index of DynamicLootFamilyAt).
 uint32 DynamicLootLevelBracket(uint32 level);
 
-// WotlkElite, a filter of its own: a rare creature (rank rare or rare elite) of a WotLK map, outside or
-// in a dungeon, never in a raid; -1 for any other creature.
-int32 DynamicLootEliteFamily(DynamicLootContext const& context);
+// WotlkRare for a rare creature (rank rare or rare elite) of a WotLK dungeon, normal or heroic, played on
+// top of its dungeon family; -1 for any other creature (outside, WotlkRare is its first filter family).
+int32 DynamicLootDungeonRareFamily(DynamicLootContext const& context);
 
 // A skinned corpse's family: a corpse gathered by herbalism, mining or engineering when the
 // creature template says so (type_flags), else skinning by the creature's level.

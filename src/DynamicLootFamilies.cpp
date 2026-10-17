@@ -101,9 +101,6 @@ namespace
         { "VanillaContainer",     S::Container },
         { "BcContainer",          S::Container },
         { "WotlkContainer",       S::Container },
-
-        // Creatures, third filter: the rares of WotLK maps, outside raids
-        { "WotlkElite",           S::Creature },
     };
 }
 

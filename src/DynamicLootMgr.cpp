@@ -459,17 +459,17 @@ void DynamicLootMgr::PlayKill(Loot* loot, Player* player, DynamicLootContext con
         step = PITY_RAID_STEP;
     float const bonus = step > 0.0f ? Pity(player) : 0.0f;
 
-    // A creature belongs to one family of the first filter and to one level bracket; a rare of a
-    // WotLK map to WotlkElite as well.
+    // A creature belongs to one family of the first filter and to one level bracket; a rare of a WotLK
+    // dungeon plays WotlkRare as well, as it would outside.
     Outcome outcome;
     PlayFamily(loot, family, factor, bonus, outcome);
     if (context.level)
         PlayFamily(loot, DynamicLootLevelBracket(context.level), factor, bonus, outcome);
     if (context.creature)
     {
-        int32 const elite = DynamicLootEliteFamily(context);
-        if (elite >= 0)
-            PlayFamily(loot, uint32(elite), factor, bonus, outcome);
+        int32 const rare = DynamicLootDungeonRareFamily(context);
+        if (rare >= 0)
+            PlayFamily(loot, uint32(rare), factor, bonus, outcome);
     }
     Settle(player, outcome, step);
 }
