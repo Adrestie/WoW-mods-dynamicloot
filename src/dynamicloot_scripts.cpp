@@ -15,8 +15,13 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "Chat.h"
+#include "CommandScript.h"
 #include "DynamicLootMgr.h"
+#include "Player.h"
 #include "ScriptMgr.h"
+
+using namespace Acore::ChatCommands;
 
 // The declarations are read once the world database is loaded: a draw naming an
 // item is checked against the item templates.
@@ -51,8 +56,60 @@ public:
     }
 };
 
+// The bad luck protection does not outlive the session.
+class DynamicLootPlayerScript : public PlayerScript
+{
+public:
+    DynamicLootPlayerScript() : PlayerScript("DynamicLootPlayerScript",
+        {
+            PLAYERHOOK_ON_LOGOUT
+        }) { }
+
+    void OnPlayerLogout(Player* player) override
+    {
+        sDynamicLootMgr->Forget(player);
+    }
+};
+
+/*
+ * .dynamicloot pity            (SEC_GAMEMASTER)  the bad luck protection of the selected player, else one's own
+ * .dynamicloot pity <points>   (SEC_GAMEMASTER)  sets it, to try the protection in game
+ */
+class DynamicLootCommandScript : public CommandScript
+{
+public:
+    DynamicLootCommandScript() : CommandScript("DynamicLootCommandScript") { }
+
+    ChatCommandTable GetCommands() const override
+    {
+        static ChatCommandTable dynamiclootTable =
+        {
+            { "pity", HandlePityCommand, SEC_GAMEMASTER, Console::No },
+        };
+        static ChatCommandTable commandTable =
+        {
+            { "dynamicloot", dynamiclootTable },
+        };
+        return commandTable;
+    }
+
+    static bool HandlePityCommand(ChatHandler* handler, Optional<float> points)
+    {
+        Player* player = handler->getSelectedPlayerOrSelf();
+        if (!player)
+            return false;
+        if (points)
+            sDynamicLootMgr->SetPity(player, *points);
+        handler->PSendSysMessage("DynamicLoot: bad luck protection of {}: {} point(s).", player->GetName(),
+            sDynamicLootMgr->Pity(player));
+        return true;
+    }
+};
+
 void AddSC_dynamicloot_scripts()
 {
     new DynamicLootWorldScript();
     new DynamicLootMiscScript();
+    new DynamicLootPlayerScript();
+    new DynamicLootCommandScript();
 }

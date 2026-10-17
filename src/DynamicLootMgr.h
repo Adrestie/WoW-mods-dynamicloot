@@ -30,14 +30,22 @@
  * <list[i] or item>:<quantity>:<chance in percent>.
  *
  * A setting that cannot be read is a warning at start-up and is ignored.
+ *
+ * The bad luck protection: one counter per player, in points, kept in memory
+ * and lost at logout. It rises on the kills that feed it (a world creature,
+ * a raid boss) when nothing was won there, is added to the chance of the
+ * draws of those kills, and any item won through DynamicLoot resets it.
  */
 
 #ifndef DYNAMICLOOT_MGR_H_
 #define DYNAMICLOOT_MGR_H_
 
 #include "Define.h"
+#include "ObjectGuid.h"
 
+#include <mutex>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -52,6 +60,7 @@ struct DynamicLootDraw
     int32  list     = -1;   // else the index of one of the module's lists
     uint8  quantity = 1;
     float  chance   = 0.0f; // percent
+    bool   pity     = true; // the bad luck protection is added (no NoPity item in it)
 };
 
 // Fallbacks played in order, the first success stopping the chain.
@@ -87,13 +96,35 @@ public:
     // Called for every loot the server fills; adds what the families of its source drop.
     void Fill(Loot* loot, LootStore const& store, Player* player);
 
+    // The player's bad luck protection, in points.
+    float Pity(Player* player);
+    void SetPity(Player* player, float points);
+    // At logout: the counter does not outlive the session.
+    void Forget(Player* player);
+
 private:
-    // Plays every line of every module on that family; factor multiplies every chance.
-    void PlayFamily(Loot* loot, uint32 family, float factor);
+    // What the draws of one loot gave.
+    struct Outcome
+    {
+        bool won       = false;    // an item, NoPity ones included
+        bool possible  = false;    // a draw the protection bears on could have dropped
+    };
+
+    // Plays every line of every module on that family; factor multiplies every chance, then
+    // bonus (in points) is added to the protected draws.
+    void PlayFamily(Loot* loot, uint32 family, float factor, float bonus, Outcome& outcome);
+
+    // After a loot: a win resets the counter; otherwise step is added, if the loot could have
+    // given a protected item.
+    void Settle(Player* player, Outcome const& outcome, float step);
 
     std::vector<DynamicLootModule> _modules;
     // By family: (module index, line index) of every line on it.
     std::vector<std::vector<std::pair<uint32, uint32>>> _byFamily;
+
+    // Loots are filled by the map threads.
+    std::mutex _pityLock;
+    std::unordered_map<ObjectGuid, float> _pity;
 };
 
 #define sDynamicLootMgr DynamicLootMgr::instance()

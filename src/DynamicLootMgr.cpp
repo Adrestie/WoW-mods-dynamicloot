@@ -41,6 +41,10 @@ namespace
     // A boss whose level is grey for the player has its chances divided by this.
     constexpr float GREY_BOSS_DIVISOR = 5.0f;
 
+    // The bad luck protection, in points: what a kill without a win adds.
+    constexpr float PITY_WORLD_STEP = 1.0f;     // a creature outside dungeons and raids
+    constexpr float PITY_RAID_STEP  = 2.5f;     // a raid boss
+
     std::string Trimmed(std::string const& s)
     {
         size_t a = 0, b = s.size();
@@ -285,6 +289,30 @@ namespace
             }
             module.lines.push_back(line);
         }
+
+        // The protection leaves alone a draw that can give a NoPity item. A list mixing both kinds
+        // is drawn without it: an excluded item must never come out boosted.
+        std::vector<bool> mixedReported(module.lists.size(), false);
+        for (DynamicLootLine& line : module.lines)
+            for (DynamicLootChain& chain : line.chains)
+                for (DynamicLootDraw& draw : chain)
+                {
+                    if (draw.list < 0)
+                    {
+                        draw.pity = !module.noPity.count(draw.item);
+                        continue;
+                    }
+                    std::vector<uint32> const& list = module.lists[draw.list];
+                    size_t const excluded = std::count_if(list.begin(), list.end(),
+                        [&module](uint32 item) { return module.noPity.count(item) != 0; });
+                    draw.pity = !excluded;
+                    if (excluded && excluded < list.size() && !mixedReported[draw.list])
+                    {
+                        mixedReported[draw.list] = true;
+                        LOG_WARN("module", "DynamicLoot: {} mixes items of NoPity with others: its draws get "
+                            "no bad luck protection.", keyOf(module.listNames[draw.list]));
+                    }
+                }
         return module;
     }
 
@@ -383,12 +411,23 @@ void DynamicLootMgr::Fill(Loot* loot, LootStore const& store, Player* player)
     float const factor = context.boss && context.level <= Acore::XP::GetGrayLevel(player->GetLevel())
         ? 1.0f / GREY_BOSS_DIVISOR : 1.0f;
 
+    // The protection feeds on world creatures (world bosses and rares included) and raid bosses;
+    // nothing in dungeons, nor on raid trash. It is played only where it feeds.
+    float step = 0.0f;
+    if (!context.dungeon)
+        step = PITY_WORLD_STEP;
+    else if (context.raid && context.boss)
+        step = PITY_RAID_STEP;
+    float const bonus = step > 0.0f ? Pity(player) : 0.0f;
+
     // A creature belongs to one family of the first filter and to one level bracket.
-    PlayFamily(loot, DynamicLootCreatureFamily(context), factor);
-    PlayFamily(loot, DynamicLootLevelBracket(context.level), factor);
+    Outcome outcome;
+    PlayFamily(loot, DynamicLootCreatureFamily(context), factor, bonus, outcome);
+    PlayFamily(loot, DynamicLootLevelBracket(context.level), factor, bonus, outcome);
+    Settle(player, outcome, step);
 }
 
-void DynamicLootMgr::PlayFamily(Loot* loot, uint32 family, float factor)
+void DynamicLootMgr::PlayFamily(Loot* loot, uint32 family, float factor, float bonus, Outcome& outcome)
 {
     if (family >= _byFamily.size())
         return;
@@ -396,16 +435,65 @@ void DynamicLootMgr::PlayFamily(Loot* loot, uint32 family, float factor)
     for (auto const& [m, l] : _byFamily[family])
     {
         DynamicLootModule const& module = _modules[m];
+        // A module at rate 0 is off: the protection cannot bring it back.
+        if (module.rate <= 0.0f)
+            continue;
         for (DynamicLootChain const& chain : module.lines[l].chains)
             for (DynamicLootDraw const& draw : chain)
             {
                 if (draw.chance <= 0.0f)
                     continue;   // never: on to the next fallback
-                if (roll_chance_f(draw.chance * module.rate * factor))
+                // The points are added after the rate factor and the grey boss brake: a bonus,
+                // which neither divides.
+                if (draw.pity)
+                    outcome.possible = true;
+                if (roll_chance_f(draw.chance * module.rate * factor + (draw.pity ? bonus : 0.0f)))
                 {
                     Place(loot, module, draw, family);
+                    outcome.won = true;
                     break;      // the first success stops the chain
                 }
             }
     }
+}
+
+void DynamicLootMgr::Settle(Player* player, Outcome const& outcome, float step)
+{
+    if (!outcome.won && (step <= 0.0f || !outcome.possible))
+        return;
+
+    std::lock_guard<std::mutex> guard(_pityLock);
+    if (outcome.won)
+    {
+        // Any item won resets it, wherever it comes from.
+        if (_pity.erase(player->GetGUID()))
+            LOG_DEBUG("module", "DynamicLoot: {} won, bad luck protection back to 0.", player->GetName());
+        return;
+    }
+    float& points = _pity[player->GetGUID()];
+    points += step;
+    LOG_DEBUG("module", "DynamicLoot: {} won nothing, bad luck protection at {} point(s).", player->GetName(),
+        points);
+}
+
+float DynamicLootMgr::Pity(Player* player)
+{
+    std::lock_guard<std::mutex> guard(_pityLock);
+    auto const it = _pity.find(player->GetGUID());
+    return it == _pity.end() ? 0.0f : it->second;
+}
+
+void DynamicLootMgr::SetPity(Player* player, float points)
+{
+    std::lock_guard<std::mutex> guard(_pityLock);
+    if (points <= 0.0f)
+        _pity.erase(player->GetGUID());
+    else
+        _pity[player->GetGUID()] = points;
+}
+
+void DynamicLootMgr::Forget(Player* player)
+{
+    std::lock_guard<std::mutex> guard(_pityLock);
+    _pity.erase(player->GetGUID());
 }

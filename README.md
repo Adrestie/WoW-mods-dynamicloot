@@ -15,8 +15,9 @@ only says, in its own `.conf`, what drops in which family and at what chance.
 brackets, what a module declares and how, the mechanisms, and the form of the
 extension. So far DynamicLoot reads and checks every module's declarations when
 the server starts, reports what it cannot read, and places their loot on
-creatures (first filter and level brackets, rate factor, grey boss brake). Still
-to come: the bad luck protection, gathering, skinning, chests and containers.
+creatures (first filter and level brackets, rate factor, grey boss brake), with
+the bad luck protection shared by all modules (`.dynamicloot pity` shows or sets
+it). Still to come: gathering, skinning, chests and containers.
 
 Original module, GPL-2.0-or-later, the licence of AzerothCore it is compiled
 into.
