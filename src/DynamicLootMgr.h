@@ -103,6 +103,10 @@ public:
     void Forget(Player* player);
 
 private:
+    void FillCreature(Loot* loot, Player* player);
+    void FillSkinning(Loot* loot, Player* player);
+    void FillGameObject(Loot* loot, Player* player);
+
     // What the draws of one loot gave.
     struct Outcome
     {

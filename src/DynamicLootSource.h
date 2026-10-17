@@ -16,8 +16,9 @@
  */
 
 /*
- * What a loot source is: which families a creature belongs to. The expansion
- * is the map's (Map.dbc), never the creature's.
+ * What a loot source is: which families a creature, a skinned corpse or a
+ * gathering node belongs to. The expansion is the map's (Map.dbc), never the
+ * creature's.
  */
 
 #ifndef DYNAMICLOOT_SOURCE_H_
@@ -26,29 +27,42 @@
 #include "Define.h"
 
 class Creature;
+class GameObject;
 class Player;
 
 struct DynamicLootContext
 {
-    Player*   player    = nullptr;
-    Creature* creature  = nullptr;
-    uint32    level     = 0;
-    uint8     rank      = 0;        // CreatureEliteType
-    bool      boss      = false;    // dungeon, raid or world boss
-    uint32    map       = 0;
-    uint32    expansion = 0;        // 0 Vanilla, 1 BC, 2 WotLK
-    bool      dungeon   = false;    // any instance, raids included
-    bool      raid      = false;
-    bool      heroic    = false;
+    Player*     player     = nullptr;
+    Creature*   creature   = nullptr;
+    GameObject* gameObject = nullptr;
+    uint32      level      = 0;
+    uint8       rank       = 0;        // CreatureEliteType
+    bool        boss       = false;    // dungeon, raid or world boss
+    uint32      map        = 0;
+    uint32      expansion  = 0;        // 0 Vanilla, 1 BC, 2 WotLK
+    bool        dungeon    = false;    // any instance, raids included
+    bool        raid       = false;
+    bool        heroic     = false;
 };
 
 // Fills the context of a creature killed by (or looted for) player.
 void DynamicLootFillCreature(DynamicLootContext& context, Player* player, Creature* creature);
+
+// Fills the context of a game object opened by player: its map only.
+void DynamicLootFillGameObject(DynamicLootContext& context, Player* player, GameObject* gameObject);
 
 // The creature's family of the first filter (an index of DynamicLootFamilyAt).
 uint32 DynamicLootCreatureFamily(DynamicLootContext const& context);
 
 // The creature's level bracket (an index of DynamicLootFamilyAt).
 uint32 DynamicLootLevelBracket(uint32 level);
+
+// A skinned corpse's family: a corpse gathered by herbalism, mining or engineering when the
+// creature template says so (type_flags), else skinning by the creature's level.
+uint32 DynamicLootSkinningFamily(DynamicLootContext const& context);
+
+// A gathering node's family, by the skill its lock requires and the expansion of its map; -1 when
+// the game object is no herb or vein, or one of those left out.
+int32 DynamicLootGatheringFamily(DynamicLootContext const& context);
 
 #endif

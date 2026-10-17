@@ -22,6 +22,7 @@
 #include "DynamicLootFamilies.h"
 #include "DynamicLootSource.h"
 #include "Formulas.h"
+#include "GameObject.h"
 #include "Log.h"
 #include "LootMgr.h"
 #include "ObjectAccessor.h"
@@ -350,6 +351,20 @@ namespace
             return nullptr;
         return ObjectAccessor::GetCreature(*player, loot->sourceWorldObjectGUID);
     }
+
+    GameObject* GameObjectSource(Loot* loot, Player* player)
+    {
+        if (!loot->sourceWorldObjectGUID.IsGameObject())
+            return nullptr;
+        return ObjectAccessor::GetGameObject(*player, loot->sourceWorldObjectGUID);
+    }
+
+    // A boss whose level is grey for the player has its chances divided.
+    float GreyBossFactor(DynamicLootContext const& context, Player* player)
+    {
+        return context.boss && context.level <= Acore::XP::GetGrayLevel(player->GetLevel())
+            ? 1.0f / GREY_BOSS_DIVISOR : 1.0f;
+    }
 }
 
 DynamicLootMgr* DynamicLootMgr::instance()
@@ -398,9 +413,22 @@ void DynamicLootMgr::Load()
 void DynamicLootMgr::Fill(Loot* loot, LootStore const& store, Player* player)
 {
     // Every loot of the server comes through here: the store is tested first.
-    if (&store != &LootTemplates_Creature || !loot || !player || _modules.empty())
+    bool const creatureStore   = &store == &LootTemplates_Creature;
+    bool const skinningStore   = &store == &LootTemplates_Skinning;
+    bool const gameObjectStore = &store == &LootTemplates_Gameobject;
+    if ((!creatureStore && !skinningStore && !gameObjectStore) || !loot || !player || _modules.empty())
         return;
 
+    if (creatureStore)
+        FillCreature(loot, player);
+    else if (skinningStore)
+        FillSkinning(loot, player);
+    else
+        FillGameObject(loot, player);
+}
+
+void DynamicLootMgr::FillCreature(Loot* loot, Player* player)
+{
     Creature* creature = CreatureSource(loot, player);
     if (!creature)
         return;
@@ -408,8 +436,7 @@ void DynamicLootMgr::Fill(Loot* loot, LootStore const& store, Player* player)
     DynamicLootContext context;
     DynamicLootFillCreature(context, player, creature);
 
-    float const factor = context.boss && context.level <= Acore::XP::GetGrayLevel(player->GetLevel())
-        ? 1.0f / GREY_BOSS_DIVISOR : 1.0f;
+    float const factor = GreyBossFactor(context, player);
 
     // The protection feeds on world creatures (world bosses and rares included) and raid bosses;
     // nothing in dungeons, nor on raid trash. It is played only where it feeds.
@@ -425,6 +452,42 @@ void DynamicLootMgr::Fill(Loot* loot, LootStore const& store, Player* player)
     PlayFamily(loot, DynamicLootCreatureFamily(context), factor, bonus, outcome);
     PlayFamily(loot, DynamicLootLevelBracket(context.level), factor, bonus, outcome);
     Settle(player, outcome, step);
+}
+
+// Skinning, and the corpses gathered by herbalism, mining or engineering: the skinning store holds
+// them all. Outside the protection, which only a win touches here.
+void DynamicLootMgr::FillSkinning(Loot* loot, Player* player)
+{
+    Creature* creature = CreatureSource(loot, player);
+    if (!creature)
+        return;
+
+    DynamicLootContext context;
+    DynamicLootFillCreature(context, player, creature);
+
+    Outcome outcome;
+    PlayFamily(loot, DynamicLootSkinningFamily(context), GreyBossFactor(context, player), 0.0f, outcome);
+    Settle(player, outcome, 0.0f);
+}
+
+// A herb or a vein. A node has no level, hence no brake; outside the protection, which only a win
+// touches here.
+void DynamicLootMgr::FillGameObject(Loot* loot, Player* player)
+{
+    GameObject* gameObject = GameObjectSource(loot, player);
+    if (!gameObject)
+        return;
+
+    DynamicLootContext context;
+    DynamicLootFillGameObject(context, player, gameObject);
+
+    int32 const family = DynamicLootGatheringFamily(context);
+    if (family < 0)
+        return;
+
+    Outcome outcome;
+    PlayFamily(loot, uint32(family), 1.0f, 0.0f, outcome);
+    Settle(player, outcome, 0.0f);
 }
 
 void DynamicLootMgr::PlayFamily(Loot* loot, uint32 family, float factor, float bonus, Outcome& outcome)
