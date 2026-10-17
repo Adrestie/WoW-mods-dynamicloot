@@ -5,12 +5,13 @@
 
 Starting point: the sections of Spheregrid (`SphereGrid.Loot.<section>`), to which **World boss** and
 **Rare** are added for each expansion (decided on 2026-09-30), whose gathering is grouped by tiers, and
-which corpses and containers complete (decided on 2026-10-01). 53 families.
+which corpses and containers complete (decided on 2026-10-01), IcecrownRaidTrash added on 2026-10-17. 54
+families.
 
 "Trash": any creature of the place that is not a boss. "World": anything outside dungeons and raids. The
 expansion is the map's.
 
-## Creatures — 24 families
+## Creatures — 25 families
 
 | Family | Who |
 |---|---|
@@ -35,9 +36,10 @@ expansion is the map's.
 | WotlkDungeonBoss | bosses of WotLK dungeons in normal |
 | WotlkHeroicTrash | non-boss creatures of WotLK dungeons in heroic |
 | WotlkHeroicBoss | bosses of WotLK dungeons in heroic |
-| WotlkRaidTrash | non-boss creatures of WotLK raids (10, 25 and heroic) |
+| WotlkRaidTrash | non-boss creatures of WotLK raids (10, 25 and heroic) outside Icecrown Citadel |
 | WotlkRaidBoss | bosses of WotLK raids outside Icecrown Citadel |
 | IcecrownRaidBoss | bosses of Icecrown Citadel |
+| IcecrownRaidTrash | **(new)** non-boss creatures of Icecrown Citadel (decided on 2026-10-17) |
 
 A world boss or a rare is read **before** the World family of its expansion: otherwise it would fall into
 it, as it does in Spheregrid today.

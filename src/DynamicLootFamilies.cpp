@@ -101,6 +101,9 @@ namespace
         { "VanillaContainer",     S::Container },
         { "BcContainer",          S::Container },
         { "WotlkContainer",       S::Container },
+
+        // Creatures, first filter, added later
+        { "IcecrownRaidTrash",    S::Creature },
     };
 }
 

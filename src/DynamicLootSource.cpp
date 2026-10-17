@@ -121,8 +121,8 @@ uint32 DynamicLootCreatureFamily(DynamicLootContext const& c)
 
     if (c.raid)
     {
-        if (c.boss && c.map == MAP_ICECROWN_CITADEL)
-            return Family("IcecrownRaidBoss");
+        if (c.map == MAP_ICECROWN_CITADEL)
+            return Family(c.boss ? "IcecrownRaidBoss" : "IcecrownRaidTrash");
         return Family(expansion + (c.boss ? "RaidBoss" : "RaidTrash"));
     }
 
