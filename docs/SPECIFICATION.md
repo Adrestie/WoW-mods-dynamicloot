@@ -5,7 +5,8 @@
 
 Starting point: the sections of Spheregrid (`SphereGrid.Loot.<section>`), to which **World boss** and
 **Rare** are added for each expansion (decided on 2026-09-30), whose gathering is grouped by tiers, and
-which corpses and containers complete (decided on 2026-10-01). 53 families.
+which corpses and containers complete (decided on 2026-10-01). 53 families, and WotlkElite added on
+2026-10-17: 54.
 
 "Trash": any creature of the place that is not a boss. "World": anything outside dungeons and raids. The
 expansion is the map's.
@@ -61,6 +62,17 @@ bracket.
 | MobLvl_80_89 | 80 and above (80 to 89, so any creature of level 80 or more) |
 
 Names in the "MobLvl_X_Y" form (decided on 2026-10-01).
+
+## Creatures — third filter: the rares of WotLK (decided on 2026-10-17)
+
+| Family | Who |
+|---|---|
+| WotlkElite | rare creatures (rank rare or rare elite) of WotLK maps, outside dungeons and raids and in dungeons (normal and heroic); never in raids |
+
+A filter of its own, like the level brackets: such a creature plays WotlkElite **in addition** to its family
+of the first filter (WotlkRare outside, WotlkDungeonTrash or WotlkHeroicTrash in a dungeon) and to its level
+bracket, which lose nothing. Rate factor, grey boss brake and bad luck protection apply as on the creature's
+other families.
 
 ## Gathering — 10 families (revised on 2026-10-01)
 

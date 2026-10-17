@@ -141,6 +141,15 @@ uint32 DynamicLootLevelBracket(uint32 level)
     return Family("MobLvl_" + std::to_string(low) + "_" + std::to_string(high));
 }
 
+int32 DynamicLootEliteFamily(DynamicLootContext const& c)
+{
+    if (c.expansion != 2 || c.raid)
+        return -1;
+    if (c.rank != CREATURE_ELITE_RARE && c.rank != CREATURE_ELITE_RAREELITE)
+        return -1;
+    return DynamicLootFamilyIndex("WotlkElite");
+}
+
 uint32 DynamicLootSkinningFamily(DynamicLootContext const& c)
 {
     uint32 const flags = c.creature ? c.creature->GetCreatureTemplate()->type_flags : 0;

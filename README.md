@@ -11,7 +11,7 @@ boss brake and a bad luck protection shared by all modules. A module that uses i
 only says, in its own `.conf`, what drops in which family and at what chance.
 
 **In progress.** The design is settled and written down in
-[docs/SPECIFICATION.md](docs/SPECIFICATION.md): the 53 families and the level
+[docs/SPECIFICATION.md](docs/SPECIFICATION.md): the 54 families and the level
 brackets, what a module declares and how, the mechanisms, and the form of the
 extension. So far DynamicLoot reads and checks every module's declarations when
 the server starts, reports what it cannot read, and places their loot on
