@@ -146,7 +146,7 @@ heroic) for a dungeon boss. Closed list:
 
 | Place | Chests |
 |---|---|
-| Raid | Cache of Winter (Hodir), Deathbringer's Cache (Saurfang), Gunship Armory (gunships, Icecrown Citadel), Dust Covered Chest (chess event, Karazhan) |
+| Raid | Cache of Winter and Rare Cache of Winter (Hodir, the second in hard mode, added on 2026-10-17), Deathbringer's Cache (Saurfang), Gunship Armory (gunships, Icecrown Citadel), Dust Covered Chest (chess event, Karazhan) |
 | Dungeon | Tribunal Chest (Halls of Stone), Cache of Eregos (The Oculus), The Captain's Chest (Halls of Reflection), Chest of The Seven (Blackrock Depths), Cache of the Legion (The Mechanar), The Talon King's Coffer (Sethekk Halls), Baelog's Chest (Uldaman) |
 
 Ignored, as event or quest chests: Scarab Coffers (Ahn'Qiraj), Tanzar's Trunk (Zul'Aman), Dark Coffer,
