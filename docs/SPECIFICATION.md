@@ -44,6 +44,10 @@ expansion is the map's.
 A world boss or a rare is read **before** the World family of its expansion: otherwise it would fall into
 it, as it does in Spheregrid today.
 
+Outside dungeons and raids, a normal or rare creature of a BC map **below level 57** (the starting zones of
+the blood elves and the draenei, and their neighbours) is Vanilla's: VanillaWorld or VanillaRare, not BcWorld
+or BcRare (decided on 2026-10-19). World bosses, dungeons and raids keep the map's expansion.
+
 A rare of a dungeon (rank rare or rare elite, normal or heroic) plays the Rare family of its expansion
 (VanillaRare, BcRare, WotlkRare) **in addition** to its dungeon family (DungeonTrash, HeroicTrash, or the boss
 family) and to its level bracket (decided on 2026-10-17).

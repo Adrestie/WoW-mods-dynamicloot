@@ -32,6 +32,9 @@ namespace
 {
     char const* const EXPANSIONS[] = { "Vanilla", "Bc", "Wotlk" };
 
+    // Outside instances, a normal or rare creature of a BC map below this level is Vanilla's.
+    constexpr uint32 BC_WORLD_MIN_LEVEL = 57;
+
     // A family index by name; the names below are all in the table.
     uint32 Family(std::string const& name)
     {
@@ -114,9 +117,12 @@ uint32 DynamicLootCreatureFamily(DynamicLootContext const& c)
     {
         if (c.rank == CREATURE_ELITE_WORLDBOSS || (c.creature && c.creature->isWorldBoss()))
             return Family(expansion + "WorldBoss");
+        // The low zones of BC maps (Eversong Woods, Azuremyst Isle and their neighbours) are old world
+        // content: below level 57, their normal and rare creatures are Vanilla's.
+        std::string const age = c.expansion == 1 && c.level < BC_WORLD_MIN_LEVEL ? "Vanilla" : expansion;
         if (c.rank == CREATURE_ELITE_RARE || c.rank == CREATURE_ELITE_RAREELITE)
-            return Family(expansion + "Rare");
-        return Family(expansion + "World");
+            return Family(age + "Rare");
+        return Family(age + "World");
     }
 
     if (c.raid)
