@@ -108,12 +108,24 @@ class Scrolled(ttk.Frame):
         self.canvas.bind("<Configure>", lambda e: self.canvas.itemconfigure(self.window, width=e.width))
         self.canvas.pack(side="left", fill="both", expand=True)
         bar.pack(side="right", fill="y")
-        for w in (self.canvas, self.inner):
-            w.bind("<Enter>", lambda e: self.bind_all("<MouseWheel>", self._wheel))
-            w.bind("<Leave>", lambda e: self.unbind_all("<MouseWheel>"))
+        Scrolled.areas[str(self.canvas)] = self.canvas
+        self.canvas.bind("<Destroy>", lambda e: Scrolled.areas.pop(str(self.canvas), None), add="+")
 
-    def _wheel(self, event):
-        self.canvas.yview_scroll(int(-event.delta / 120), "units")
+    # Every scrolling area of the window, by its canvas: the wheel scrolls the one under the mouse, whatever
+    # widget of its content the mouse is over.
+    areas = {}
+
+    @staticmethod
+    def wheel(root, event):
+        widget = root.winfo_containing(event.x_root, event.y_root)
+        while widget is not None:
+            canvas = Scrolled.areas.get(str(widget))
+            if canvas is not None:
+                first, last = canvas.yview()
+                if first > 0 or last < 1:
+                    canvas.yview_scroll(int(-event.delta / 120) or (-1 if event.delta > 0 else 1), "units")
+                return
+            widget = widget.master
 
 
 class Tooltip(object):
@@ -169,6 +181,7 @@ class LootEditor(object):
                                  min(int(900 * scale), root.winfo_screenheight() - 80)))
         root.minsize(int(1000 * scale), int(680 * scale))
         self.styles()
+        root.bind_all("<MouseWheel>", lambda e: Scrolled.wheel(root, e))
         self.dnd = DragDrop(root)
         self.tip = Tooltip(root)
         self.main = None
