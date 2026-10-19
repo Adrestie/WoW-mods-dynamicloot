@@ -97,9 +97,10 @@ class DragDrop(object):
 class Scrolled(ttk.Frame):
     """A frame that scrolls vertically: its content goes in .inner."""
 
-    def __init__(self, master, background=BG):
+    def __init__(self, master, background=BG, width=None):
         super().__init__(master)
-        self.canvas = tk.Canvas(self, background=background, highlightthickness=0, borderwidth=0)
+        self.canvas = tk.Canvas(self, background=background, highlightthickness=0, borderwidth=0,
+                                **({"width": width} if width else {}))
         bar = ttk.Scrollbar(self, orient="vertical", command=self.canvas.yview)
         self.canvas.configure(yscrollcommand=bar.set)
         self.inner = tk.Frame(self.canvas, background=background)
@@ -220,6 +221,7 @@ class LootEditor(object):
                         darkcolor=BUTTON, padding=(12, 4))
         style.map("TButton", background=[("disabled", CARD), ("active", BUTTON_HOVER)],
                   foreground=[("disabled", MUTED)])
+        style.configure("Small.TButton", padding=(2, 1))
         style.configure("Accent.TButton", background=ACCENT, foreground="white", bordercolor=ACCENT,
                         lightcolor=ACCENT, darkcolor=ACCENT, font=("Segoe UI", 9, "bold"), padding=(16, 5))
         style.map("Accent.TButton", background=[("disabled", BUTTON), ("active", "#6f9cf2")])
@@ -308,7 +310,7 @@ class LootEditor(object):
         panes.pack(fill="both", expand=True)
         left = ttk.Frame(panes, width=330)
         centre = ttk.Frame(panes)
-        right = ttk.Frame(panes, width=300)
+        right = ttk.Frame(panes, width=210)
         panes.add(left, weight=0)
         panes.add(centre, weight=1)
         panes.add(right, weight=0)
@@ -382,11 +384,11 @@ class LootEditor(object):
         head.pack(fill="x")
         ttk.Label(head, text=t("lists"), style="Section.TLabel").pack(side="left")
         ttk.Button(head, text=t("new_list"), command=self.new_list).pack(side="right")
-        ttk.Label(parent, text=t("list_hint"), style="Hint.TLabel", wraplength=280).pack(anchor="w", pady=(2, 4))
-        self.lists_box = Scrolled(parent)
+        ttk.Label(parent, text=t("list_hint"), style="Hint.TLabel", wraplength=200).pack(anchor="w", pady=(2, 4))
+        self.lists_box = Scrolled(parent, width=196)
         self.lists_box.pack(fill="both", expand=True)
         ttk.Label(parent, text=t("no_pity"), style="Section.TLabel").pack(anchor="w", pady=(10, 0))
-        ttk.Label(parent, text=t("no_pity_hint"), style="Hint.TLabel", wraplength=280).pack(anchor="w")
+        ttk.Label(parent, text=t("no_pity_hint"), style="Hint.TLabel", wraplength=200).pack(anchor="w")
         self.no_pity_box = tk.Frame(parent, bg=FIELD, height=ICON + 14, highlightthickness=1,
                                     highlightbackground=BORDER)
         self.no_pity_box.pack(fill="x", pady=(4, 0))
@@ -494,9 +496,14 @@ class LootEditor(object):
             items = self.project.lists[name]
             self.dnd.source(token, ("list", name), self.photo(items[0], SMALL_ICON) if items else None)
             tk.Label(head, text=name, bg=CARD, fg=TEXT, font=("Segoe UI", 9, "bold")).pack(side="left", padx=6)
-            ttk.Button(head, text="✕", width=3, command=lambda n=name: self.delete_list(n)).pack(side="right")
-            ttk.Button(head, text=self.t("rename"), command=lambda n=name: self.rename_list(n)).pack(side="right",
-                                                                                                   padx=4)
+            delete = ttk.Button(head, text="✕", width=2, style="Small.TButton",
+                                command=lambda n=name: self.delete_list(n))
+            delete.pack(side="right")
+            self.tip.attach(delete, self.t("delete"))
+            rename = ttk.Button(head, text="✎", width=2, style="Small.TButton",
+                                command=lambda n=name: self.rename_list(n))
+            rename.pack(side="right", padx=2)
+            self.tip.attach(rename, self.t("rename"))
             grid = tk.Frame(card, bg=FIELD, highlightthickness=0)
             grid.pack(fill="x", padx=6, pady=(0, 6))
             self.dnd.target(card, lambda p, c, n=name: self.drop_list(n, p, c))
@@ -504,7 +511,7 @@ class LootEditor(object):
             if not items:
                 tk.Label(grid, text=self.t("drop_items"), bg=FIELD, fg=MUTED, font=("Segoe UI", 8, "italic")).pack(
                     pady=8)
-            per_row = 7
+            per_row = 5
             for i, entry in enumerate(items[:140]):
                 w = self.icon_widget(grid, entry, SMALL_ICON)
                 w.grid(row=i // per_row, column=i % per_row, padx=1, pady=1)
