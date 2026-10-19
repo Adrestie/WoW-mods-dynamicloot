@@ -155,6 +155,7 @@ class LootEditor(object):
         self.project = loot_model.Project(self.settings.get("prefix") or "")
         self.results = []
         self.prefix_values = []
+        self.mod = None               # loot_data.Mod of the Mod field, once read
         self.moving = None
         self.working = False
         self.preview_pending = False
@@ -275,6 +276,7 @@ class LootEditor(object):
         self.rate.trace_add("write", lambda *_: self.rate_changed())
         ttk.Button(mod, text=t("new"), command=self.clear).pack(side="right")
         ttk.Button(mod, text=t("import"), command=self.import_conf).pack(side="right", padx=6)
+        ttk.Button(mod, text=t("mod_conf"), command=self.load_mod_conf).pack(side="right")
 
         # bottom: preview and Generate
         bottom = ttk.Frame(self.main)
@@ -822,10 +824,28 @@ class LootEditor(object):
             if prefix not in self.prefix_values:
                 self.prefix_values.append(prefix)
         self.prefix.configure(values=self.prefix_values)
+        self.mod = mod
+        self.show_results()
+        # an empty editor fills itself from the mod's .conf: the installed one, else its template
+        if not self.project.lines and not self.project.lists:
+            path = mod.conf(self.world.server)
+            if path:
+                self.load_conf(path, mod.prefixes, announce=False)
         if not self.project.prefix and mod.prefixes:
             self.prefix.set(mod.prefixes[0])
             self.prefix_changed()
-        self.show_results()
+
+    def load_mod_conf(self):
+        """The mod's .conf, read again into the editor (what it holds is replaced)."""
+        mod = getattr(self, "mod", None)
+        path = mod.conf(self.world.server if self.world else None) if mod else None
+        if not path:
+            self.message(self.t("import_title"), self.t("mod_no_conf"), BAD)
+            return
+        if (self.project.lines or self.project.lists) and not self.confirm(self.t("import_title"),
+                                                                          self.t("replace_confirm", path)):
+            return
+        self.load_conf(path, mod.prefixes)
 
     def connect(self):
         if self.working:
@@ -889,16 +909,26 @@ class LootEditor(object):
     def import_conf(self):
         path = filedialog.askopenfilename(parent=self.root, filetypes=[(".conf", "*.conf *.dist"), ("*", "*")],
                                           initialdir=self.world.server.module_confs if self.world else None)
-        if not path:
+        if path:
+            self.load_conf(path)
+
+    def load_conf(self, path, wanted=(), announce=True):
+        """Fills the editor from the <Mod>.Loot.* lines of a .conf. wanted: the prefixes to take without
+        asking (a mod's own); announce: say what was read in a dialog (else in the search's status line)."""
+        try:
+            with open(path, encoding="utf-8", errors="replace") as f:
+                text = f.read()
+        except OSError as e:
+            self.message(self.t("import_title"), str(e), BAD)
             return
-        with open(path, encoding="utf-8", errors="replace") as f:
-            text = f.read()
         prefixes = loot_model.prefixes_in(text)
         if not prefixes:
-            self.message(self.t("import_title"), self.t("import_none"), BAD)
+            if announce:
+                self.message(self.t("import_title"), self.t("import_none"), BAD)
             return
-        prefix = prefixes[0] if len(prefixes) == 1 else self.choose(self.t("import_title"),
-                                                                    self.t("import_choose"), prefixes)
+        prefix = next((p for p in wanted if p in prefixes), None) or (
+            prefixes[0] if len(prefixes) == 1 else self.choose(self.t("import_title"), self.t("import_choose"),
+                                                               prefixes))
         if not prefix:
             return
         project, problems = loot_model.parse(text, prefix)
@@ -912,9 +942,12 @@ class LootEditor(object):
         self.prefix_changed()
         self.refresh_all()
         text = self.t("import_done", prefix, len(project.lists), len(project.lines))
-        if problems:
-            text += "\n\n" + self.t("import_problems") + "\n" + "\n".join(problems)
-        self.message(self.t("import_title"), text, BAD if problems else GOOD)
+        if announce or problems:
+            if problems:
+                text += "\n\n" + self.t("import_problems") + "\n" + "\n".join(problems)
+            self.message(self.t("import_title"), "%s\n\n%s" % (path, text), BAD if problems else GOOD)
+        else:
+            self.status.configure(text="%s — %s" % (self.status.cget("text"), text))
 
     def generate(self):
         t = self.t

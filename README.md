@@ -39,7 +39,10 @@ their items through it, and list it in the `dependencies` of their
   `installer.json`). Its items show by themselves in the search: those of the
   `item_template` rows its manifest declares, else those its `data/sql` files
   insert; **Mod's items** shows them again, and the mod's loot prefix (read
-  from its `.conf` template) fills the prefix when it is empty.
+  from its `.conf` template) fills the prefix when it is empty. An empty
+  editor fills itself from the mod's `.conf` (the one installed in the
+  server's `configs/modules`, else its template); **Load the mod's .conf**
+  reads it again.
 * Drag an item onto a family: a new draw (a die). Onto an existing die: a
   fallback, tried after the others. Click an item placed in a family to set
   its chance and quantity, move it in its die or delete it; drag it to another

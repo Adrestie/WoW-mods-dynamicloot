@@ -56,6 +56,7 @@ class Mod(object):
         import manifest
         self.folder = os.path.normpath(folder)
         self.title = os.path.basename(self.folder)
+        self.conf_file = None           # the name of its .conf in configs/modules, from its manifest
         conditions, confs = [], []
         try:
             M = manifest.load(self.folder)
@@ -64,6 +65,7 @@ class Mod(object):
                           if table.lower() == "item_template"]
             if M.conf:
                 confs.append(os.path.join(self.folder, M.conf["template"]))
+                self.conf_file = M.conf["file"]
         except core.InstallerError:
             pass
         if not conditions:
@@ -79,6 +81,17 @@ class Mod(object):
                     self.prefixes += [p for p in loot_model.prefixes_in(f.read()) if p not in self.prefixes]
             except OSError:
                 pass
+
+
+    def conf(self, server=None):
+        """The .conf that holds the mod's loot lines: the one installed on the server (configs/modules),
+        else its template in the mod's folder; None when there is neither."""
+        candidates = []
+        if server is not None and self.conf_file:
+            candidates.append(os.path.join(server.module_confs, self.conf_file))
+        candidates += [os.path.join(self.folder, "conf", (self.conf_file or "") + ".dist")] if self.conf_file else []
+        candidates += sorted(glob.glob(os.path.join(self.folder, "conf", "*.dist")))
+        return next((c for c in candidates if os.path.isfile(c)), None)
 
 
 def sql_item_entries(folder):
