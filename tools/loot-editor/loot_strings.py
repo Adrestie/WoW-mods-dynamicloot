@@ -13,6 +13,17 @@ TEXTS = {
     "server": ("Dossier du worldserver", "Worldserver folder"),
     "server_hint": ("Le dossier de worldserver.exe : sa configuration donne la base world.",
                     "The folder of worldserver.exe: its configuration gives the world database."),
+    "mod": ("Mod (optionnel)", "Mod (optional)"),
+    "mod_hint": ("Le dossier d'un de vos mods (celui de son installer.json) : ses objets s'affichent tout seuls "
+                 "dans la recherche.",
+                 "The folder of one of your mods (the one of its installer.json): its items show by themselves "
+                 "in the search."),
+    "mod_items": ("Objets du mod", "Mod's items"),
+    "mod_results": ("%s : %d objet(s)", "%s: %d item(s)"),
+    "mod_results_more": ("%s : %d premiers objets", "%s: first %d items"),
+    "mod_none": ("%s : aucun objet trouvé (ni plage d'item_template dans installer.json, ni INSERT dans data/sql)",
+                 "%s: no item found (no item_template range in installer.json, no INSERT in data/sql)"),
+    "mod_bad": ("Pas d'installer.json dans le dossier du mod.", "No installer.json in the mod's folder."),
     "browse": ("Parcourir…", "Browse..."),
     "connect": ("Se connecter", "Connect"),
     "connecting": ("Connexion…", "Connecting..."),

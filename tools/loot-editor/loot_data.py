@@ -22,6 +22,7 @@ ICON_DBC = "DBFilesClient\\ItemDisplayInfo.dbc"
 ICON_FIELD = 5                      # ItemDisplayInfo.dbc: InventoryIcon[0]
 UNKNOWN_ICON = "INV_Misc_QuestionMark"
 MAX_RESULTS = 300
+MOD_RESULTS = 1000
 
 QUALITY_COLOURS = ["#9d9d9d", "#ffffff", "#1eff00", "#0070dd", "#a335ee", "#ff8000", "#e6cc80", "#e6cc80"]
 
@@ -45,6 +46,58 @@ def save_settings(settings):
             json.dump(settings, f, indent=1, ensure_ascii=False)
     except OSError:
         pass
+
+
+class Mod(object):
+    """One of the user's mods, read from its folder: its title, the condition on item_template that
+    selects its items, and the loot prefixes its .conf template declares."""
+
+    def __init__(self, folder):
+        import manifest
+        self.folder = os.path.normpath(folder)
+        self.title = os.path.basename(self.folder)
+        conditions, confs = [], []
+        try:
+            M = manifest.load(self.folder)
+            self.title = M.title
+            conditions = ["(%s)" % w for table, w in M.databases.get("world", {}).get("rows", [])
+                          if table.lower() == "item_template"]
+            if M.conf:
+                confs.append(os.path.join(self.folder, M.conf["template"]))
+        except core.InstallerError:
+            pass
+        if not conditions:
+            entries = sql_item_entries(self.folder)
+            if entries:
+                conditions = ["entry IN (%s)" % ", ".join(str(e) for e in entries)]
+        self.where = " OR ".join(conditions) or None
+        confs += glob.glob(os.path.join(self.folder, "conf", "*.dist"))
+        self.prefixes = []
+        for path in confs:
+            try:
+                with open(path, encoding="utf-8", errors="replace") as f:
+                    self.prefixes += [p for p in loot_model.prefixes_in(f.read()) if p not in self.prefixes]
+            except OSError:
+                pass
+
+
+def sql_item_entries(folder):
+    """The item entries the SQL files of a mod insert into item_template (data/sql, any depth)."""
+    found = set()
+    for path in glob.glob(os.path.join(folder, "data", "sql", "**", "*.sql"), recursive=True):
+        try:
+            with open(path, encoding="utf-8", errors="replace") as f:
+                text = f.read()
+        except OSError:
+            continue
+        for m in re.finditer(r"INSERT\s+(?:IGNORE\s+)?INTO\s+`?item_template`?\s*(?:\([^)]*\))?\s*VALUES(.*?);",
+                             text, re.I | re.S):
+            found.update(int(e) for e in re.findall(r"^\s*\(\s*(\d+)\s*,", m.group(1), re.M))
+    return sorted(found)
+
+
+def is_mod_folder(path):
+    return bool(path) and os.path.isfile(os.path.join(path, core.MANIFEST_NAME))
 
 
 class Item(object):
@@ -130,6 +183,13 @@ class World(object):
             where += " AND t.Quality = %d" % quality
         items = self._select(where)
         return items[:MAX_RESULTS], len(items) > MAX_RESULTS
+
+    def mod_items(self, mod):
+        """(items, more): the items of a mod, at most MOD_RESULTS."""
+        if not mod.where:
+            return [], False
+        items = self._select("(%s)" % mod.where, MOD_RESULTS + 1)
+        return items[:MOD_RESULTS], len(items) > MOD_RESULTS
 
     def items(self, entries):
         """{entry: Item} of these entries, those the database holds."""

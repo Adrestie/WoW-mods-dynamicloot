@@ -242,7 +242,8 @@ class LootEditor(object):
         box.pack(fill="x")
         box.columnconfigure(1, weight=1)
         self.vars = {}
-        for row, (key, label, hint) in enumerate((("client", "game", "game_hint"), ("server", "server", "server_hint"))):
+        for row, (key, label, hint) in enumerate((("client", "game", "game_hint"), ("server", "server", "server_hint"),
+                                                  ("mod", "mod", "mod_hint"))):
             ttk.Label(box, text=t(label), style="Card.TLabel", width=22).grid(row=row, column=0, sticky="w", pady=2)
             var = tk.StringVar(value=self.settings.get(key) or "")
             self.vars[key] = var
@@ -251,7 +252,7 @@ class LootEditor(object):
             ttk.Button(box, text=t("browse"), command=lambda k=key: self.browse(k)).grid(row=row, column=2, pady=2)
             self.tip.attach(entry, t(hint))
         bar = ttk.Frame(box, style="Card.TFrame")
-        bar.grid(row=2, column=0, columnspan=3, sticky="ew", pady=(6, 0))
+        bar.grid(row=3, column=0, columnspan=3, sticky="ew", pady=(6, 0))
         self.connect_button = ttk.Button(bar, text=t("connect"), style="Accent.TButton", command=self.connect)
         self.connect_button.pack(side="right")
         self.status = ttk.Label(bar, text=self.status_text if hasattr(self, "status_text") else t("not_connected"),
@@ -319,6 +320,8 @@ class LootEditor(object):
         self.quality = ttk.Combobox(line, values=[t("any_quality")] + t("qualities"), state="readonly", width=12)
         self.quality.current(0)
         self.quality.pack(side="left", padx=6)
+        self.mod_button = ttk.Button(line, text=t("mod_items"), command=self.search_mod)
+        self.mod_button.pack(side="right")
         self.result_text = ttk.Label(parent, text="", style="Hint.TLabel")
         self.result_text.pack(anchor="w", pady=(2, 2))
         self.results_box = Scrolled(parent, background=FIELD)
@@ -785,12 +788,50 @@ class LootEditor(object):
         path = filedialog.askdirectory(initialdir=self.vars[key].get() or None, parent=self.root)
         if path:
             self.vars[key].set(os.path.normpath(path))
+            if key == "mod":
+                self.settings["mod"] = self.vars["mod"].get().strip()
+                loot_data.save_settings(self.settings)
+                self.search_mod()
+
+    def search_mod(self):
+        """Shows the items of the mod of the Mod field, the one its manifest or its SQL names."""
+        folder = self.vars["mod"].get().strip()
+        if not folder or not self.world or self.working:
+            return
+        if not loot_data.is_mod_folder(folder):
+            self.result_text.configure(text=self.t("mod_bad"))
+            return
+        self.result_text.configure(text=self.t("searching"))
+
+        def job():
+            mod = loot_data.Mod(folder)
+            return mod, self.world.mod_items(mod)
+        self.run(job, self.mod_searched)
+
+    def mod_searched(self, result):
+        mod, (items, more) = result
+        for item in items:
+            self.items[item.entry] = item
+        self.results = items
+        if not mod.where:
+            text = self.t("mod_none", mod.title)
+        else:
+            text = self.t("mod_results_more", mod.title, len(items)) if more else                 self.t("mod_results", mod.title, len(items))
+        self.result_text.configure(text=text)
+        for prefix in mod.prefixes:
+            if prefix not in self.prefix_values:
+                self.prefix_values.append(prefix)
+        self.prefix.configure(values=self.prefix_values)
+        if not self.project.prefix and mod.prefixes:
+            self.prefix.set(mod.prefixes[0])
+            self.prefix_changed()
+        self.show_results()
 
     def connect(self):
         if self.working:
             return
         server, client = self.vars["server"].get().strip(), self.vars["client"].get().strip()
-        self.settings.update(server=server, client=client)
+        self.settings.update(server=server, client=client, mod=self.vars["mod"].get().strip())
         loot_data.save_settings(self.settings)
         self.status.configure(text=self.t("connecting"), style="CardHint.TLabel")
 
@@ -818,6 +859,8 @@ class LootEditor(object):
             self.items.update(self.world.items(known))
         self.prefix_values = prefixes
         self.build()
+        if self.vars["mod"].get().strip():
+            self.root.after(50, self.search_mod)
 
     def connected_text(self):
         return self.t("connected", self.world.db.name, len(self.families),

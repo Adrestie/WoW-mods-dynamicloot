@@ -35,6 +35,11 @@ their items through it, and list it in the `dependencies` of their
   then **Connect**.
 * Search items by name, by entry, or by range (`87001-87372`); the results
   show with their icons, framed in their quality's colour.
+* **Mod (optional)**: the folder of one of your mods (the one of its
+  `installer.json`). Its items show by themselves in the search: those of the
+  `item_template` rows its manifest declares, else those its `data/sql` files
+  insert; **Mod's items** shows them again, and the mod's loot prefix (read
+  from its `.conf` template) fills the prefix when it is empty.
 * Drag an item onto a family: a new draw (a die). Onto an existing die: a
   fallback, tried after the others. Click an item placed in a family to set
   its chance and quantity, move it in its die or delete it; drag it to another
@@ -56,7 +61,7 @@ written. The installer leaves `tools` out of the server's sources.
 
 `tools/loot-editor/build.cmd` builds it with PyInstaller and Pillow
 (`python -m pip install pyinstaller pillow`); without building,
-`python tools/loot-editor/loot_editor.py`. Its `core.py`, `window.py`,
+`python tools/loot-editor/loot_editor.py`. Its `core.py`, `manifest.py`, `window.py`,
 `mpq_archive.py` and `wow_exe.py` are copies of the
 [WoW-mods installer](https://github.com/Adrestie/WoW-mods-installer)'s engine
 (MIT), refreshed from there unchanged; the editor itself is MIT as well.

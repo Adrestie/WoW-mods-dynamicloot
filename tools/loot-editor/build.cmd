@@ -3,7 +3,7 @@ rem ---------------------------------------------------------------------------
 rem  Builds loot-editor.exe, in this folder, from loot_editor.py
 rem  (PyInstaller: python -m pip install pyinstaller; Pillow: python -m pip install pillow).
 rem
-rem  Run again after any change to the .py files of this folder. core.py, window.py,
+rem  Run again after any change to the .py files of this folder. core.py, manifest.py, window.py,
 rem  mpq_archive.py and wow_exe.py are copies of the WoW-mods installer's engine
 rem  (github.com/Adrestie/WoW-mods-installer): refresh them from there, unchanged.
 rem
