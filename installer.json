@@ -7,6 +7,7 @@
     "src/dynamicloot_loader.cpp"
   ],
   "exclude_from_sources": [
-    "docs"
+    "docs",
+    "tools"
   ]
 }

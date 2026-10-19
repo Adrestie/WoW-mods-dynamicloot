@@ -1,0 +1,4 @@
+# Built by tools/loot-editor/build.cmd
+loot-editor.exe
+build-editor/
+__pycache__/
