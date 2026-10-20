@@ -1,7 +1,13 @@
 # -*- coding: utf-8 -*-
-"""The loot editor's texts, in French and in English (MIT licence). Any other
-language of the game gets English."""
+"""The loot editor's texts (MIT licence): French and English here, German,
+Spanish and Russian in loot_strings_more. Any other language of the game gets
+English, and so does a text a language lacks."""
 import re
+
+import loot_strings_more
+
+# The languages of the window, in the order of its menu: (code, name).
+LANGUAGES = [("fr", "Français"), ("en", "English"), ("de", "Deutsch"), ("es", "Español"), ("ru", "Русский")]
 
 TEXTS = {
     "title": ("Éditeur de butin DynamicLoot", "DynamicLoot loot editor"),
@@ -176,32 +182,36 @@ class Texts(object):
     """The texts of one language: t("key"), t("key", args...) formats."""
 
     def __init__(self, language):
-        self.language = "fr" if language == "fr" else "en"
-        self.index = 0 if self.language == "fr" else 1
+        self.language = language if language in dict(LANGUAGES) else "en"
+        self.index = 0 if self.language == "fr" else 1      # into TEXTS; English for the other languages
+        self.more = loot_strings_more.MORE.get(self.language, {})
 
     def __call__(self, key, *args):
-        text = TEXTS[key][self.index]
+        text = self.more.get(key, TEXTS[key][self.index])
         return text % args if args else text
 
     def family(self, name):
         """What a family holds, in words ("" for a family this editor does not describe)."""
         i = self.index
-        if name in _SINGLE[i]:
-            return _SINGLE[i][name]
+        single = loot_strings_more.SINGLE.get(self.language, _SINGLE[i])
+        if name in single:
+            return single[name]
         m = re.match(r"^MobLvl_(\d+)_(\d+)$", name)
         if m:
             low, high = m.groups()
-            if high == "89":
-                return ("niveau %s et plus" if i == 0 else "level %s and above") % low
-            return ("niveau %s à %s" if i == 0 else "level %s to %s") % (low, high)
+            levels = loot_strings_more.LEVELS.get(self.language) or \
+                (("niveau %s à %s", "niveau %s et plus") if i == 0 else ("level %s to %s", "level %s and above"))
+            return levels[1] % low if high == "89" else levels[0] % (low, high)
+        kinds = loot_strings_more.KINDS.get(self.language, _KINDS[i])
         for expansion in _EXPANSION:
             if name.startswith(expansion):
-                kind = _KINDS[i].get(name[len(expansion):])
+                kind = kinds.get(name[len(expansion):])
                 if kind:
                     return "%s, %s" % (_EXPANSION[expansion], kind)
         return ""
 
 
 def language_of(locale):
-    """The editor's language for a game locale ("frFR" -> "fr")."""
-    return "fr" if locale and locale.lower().startswith("fr") else "en"
+    """The editor's language for a game locale ("frFR" -> "fr", "esMX" -> "es"); English for the others."""
+    code = (locale or "")[:2].lower()
+    return code if code in dict(LANGUAGES) else "en"

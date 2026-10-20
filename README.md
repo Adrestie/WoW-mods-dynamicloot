@@ -57,9 +57,9 @@ their items through it, and list it in the `dependencies` of their
   would, copies the lines to the clipboard and shows them: paste them into the
   mod's `.conf` (`configs/modules`), then restart the worldserver.
 
-The window speaks French when the game runs in French (`SET locale` of
-`WTF/Config.wtf`), English otherwise; the language can be changed at the top
-right. It only reads: the database, the game and the server's files are never
+The window speaks the game's language (`SET locale` of `WTF/Config.wtf`) when
+it is French, German, Spanish or Russian, English otherwise; the language can
+be changed at the top right. The item names come in the game's language too. It only reads: the database, the game and the server's files are never
 written. The installer leaves `tools` out of the server's sources.
 
 `tools/loot-editor/build.cmd` builds it with PyInstaller and Pillow

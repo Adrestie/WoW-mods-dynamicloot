@@ -246,9 +246,10 @@ class LootEditor(object):
         head = ttk.Frame(self.main)
         head.pack(fill="x")
         ttk.Label(head, text=t("title"), style="Title.TLabel").pack(side="left")
-        lang = ttk.Combobox(head, values=["Français", "English"], state="readonly", width=9)
-        lang.current(0 if self.language == "fr" else 1)
-        lang.bind("<<ComboboxSelected>>", lambda e: self.set_language("fr" if lang.current() == 0 else "en"))
+        codes = [code for code, _ in loot_strings.LANGUAGES]
+        lang = ttk.Combobox(head, values=[name for _, name in loot_strings.LANGUAGES], state="readonly", width=9)
+        lang.current(codes.index(self.t.language))
+        lang.bind("<<ComboboxSelected>>", lambda e: self.set_language(codes[lang.current()]))
         lang.pack(side="right")
         ttk.Label(head, text=t("language")).pack(side="right", padx=6)
         ttk.Label(self.main, text=t("subtitle"), style="Hint.TLabel").pack(anchor="w", pady=(0, 8))
@@ -339,7 +340,10 @@ class LootEditor(object):
         self.quality.pack(side="left", padx=6)
         self.mod_button = ttk.Button(line, text=t("mod_items"), command=self.search_mod)
         self.mod_button.pack(side="right")
-        self.result_text = ttk.Label(parent, text="", style="Hint.TLabel")
+        # what the search shows, said again in the window's language when it changes
+        message = getattr(self, "result_message", None)
+        self.result_text = ttk.Label(parent, text=t(message[0], *message[1:]) if message else "",
+                                     style="Hint.TLabel")
         self.result_text.pack(anchor="w", pady=(2, 2))
         self.results_box = Scrolled(parent, background=FIELD)
         self.results_box.pack(fill="both", expand=True)
@@ -830,16 +834,19 @@ class LootEditor(object):
             return mod, self.world.mod_items(mod)
         self.run(job, self.mod_searched)
 
+    def say_results(self, key, *args):
+        self.result_message = (key,) + args
+        self.result_text.configure(text=self.t(key, *args))
+
     def mod_searched(self, result):
         mod, (items, more) = result
         for item in items:
             self.items[item.entry] = item
         self.results = items
         if not mod.where:
-            text = self.t("mod_none", mod.title)
+            self.say_results("mod_none", mod.title)
         else:
-            text = self.t("mod_results_more", mod.title, len(items)) if more else                 self.t("mod_results", mod.title, len(items))
-        self.result_text.configure(text=text)
+            self.say_results("mod_results_more" if more else "mod_results", mod.title, len(items))
         for prefix in mod.prefixes:
             if prefix not in self.prefix_values:
                 self.prefix_values.append(prefix)
@@ -922,7 +929,7 @@ class LootEditor(object):
         for item in items:
             self.items[item.entry] = item
         self.results = items
-        self.result_text.configure(text=self.t("results_more", len(items)) if more else self.t("results", len(items)))
+        self.say_results("results_more" if more else "results", len(items))
         self.show_results()
 
     # -- import, generate -----------------------------------------------------
