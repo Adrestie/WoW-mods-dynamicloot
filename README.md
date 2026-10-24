@@ -1,73 +1,43 @@
 # dynamicloot
 
-A shared loot extension for AzerothCore 3.3.5a. Modules that add items across the
-whole game -- [mod-spheregrid](https://github.com/Adrestie/mod-spheregrid),
-[mod-stellar-tarot](https://github.com/Adrestie/mod-stellar-tarot) and those to
-come -- spread their drops without touching the loot tables of every creature,
-node or chest. DynamicLoot sorts every loot source into families (world
-creatures, dungeon and raid bosses by expansion, level brackets, gathering nodes,
-skinning, chests, inventory containers), places the items, and holds the grey
-boss brake and a bad luck protection shared by all modules. A module that uses it
-only says, in its own `.conf`, what drops in which family and at what chance.
+A shared loot extension for AzerothCore 3.3.5a: modules that add items across the whole game spread their drops through it, without touching the loot tables of every creature, node or chest.
 
-The design is written down in [docs/SPECIFICATION.md](docs/SPECIFICATION.md):
-the 54 families and the level brackets, what a module declares and how, the
-mechanisms, and the form of the extension. DynamicLoot reads and checks every
-module's declarations when the server starts, reports what it cannot read, and
-places their loot on creatures (first filter, level brackets, rares of
-dungeons, rate factor, grey boss brake), with the bad luck protection shared by
-all modules (`.dynamicloot pity` shows or sets it), on herbs and veins, on
-skinning and on the corpses gathered by herbalism, mining or engineering, on
-the real chests and the boss chests, and on the inventory containers (closed
-lists in the code). [mod-spheregrid](https://github.com/Adrestie/mod-spheregrid)
-and [mod-stellar-tarot](https://github.com/Adrestie/mod-stellar-tarot) drop
-their items through it, and list it in the `dependencies` of their
-`installer.json`.
+## Key features
 
-## The loot editor
+- Every loot source sorted into families: world creatures, dungeon and raid bosses by expansion, level brackets, rares, gathering nodes, skinning, chests, containers.
+- A module only says, in its own `.conf`, what drops in which family and at what chance.
+- A grey boss brake and a bad luck protection shared by every module.
+- Declarations checked at startup, with a report of what cannot be read.
+- `tools/loot-editor/loot-editor.exe` writes a mod's loot lines by drag and drop, with the game's icons, in five languages.
+- Used by [mod-spheregrid](https://github.com/Adrestie/mod-spheregrid) and [mod-stellar-tarot](https://github.com/Adrestie/mod-stellar-tarot).
 
-`tools/loot-editor` holds `loot-editor.exe`, which writes a mod's loot lines
-(the `<Mod>.Loot.*` settings of its `.conf`) without typing them.
+## Dependencies
 
-* Give it the game folder (the icons come from its archives) and the
-  worldserver folder (its `worldserver.conf` gives the world database; the
-  families are read from the DynamicLoot installed in the server's sources),
-  then **Connect**.
-* Search items by name, by entry, or by range (`87001-87372`); the results
-  show with their icons, framed in their quality's colour.
-* **Mod (optional)**: the folder of one of your mods (the one of its
-  `installer.json`). Its items show by themselves in the search: those of the
-  `item_template` rows its manifest declares, else those its `data/sql` files
-  insert; **Mod's items** shows them again, and the mod's loot prefix (read
-  from its `.conf` template) fills the prefix when it is empty. An empty
-  editor fills itself from the mod's `.conf` (the one installed in the
-  server's `configs/modules`, else its template); **Load the mod's .conf**
-  reads it again.
-* Drag an item onto a family: a new draw (a die). Onto an existing die: a
-  fallback, tried after the others. Click an item placed in a family to set
-  its chance and quantity, move it in its die or delete it; drag it to another
-  family to move it (Ctrl: copy), or back onto the search to remove it.
-* **New list** makes a list (`items[0]`, renamed at will); drop items into
-  it, or **Add all to the list** for a whole search. A list is dragged into
-  the families like an item, and drawn without weights.
-* Drop items on **NoPity** to keep the bad luck protection off them; set the
-  mod's prefix and its rate at the top.
-* **Import a .conf** reads the `<Mod>.Loot.*` lines of a mod already
-  written, to change them. **Generate** checks everything as DynamicLoot
-  would, copies the lines to the clipboard and shows them: paste them into the
-  mod's `.conf` (`configs/modules`), then restart the worldserver.
+| Dependency | For |
+|---|---|
+| [AzerothCore](https://github.com/azerothcore/azerothcore-wotlk) (WotLK 3.3.5a) | the server |
 
-The window speaks the game's language (`SET locale` of `WTF/Config.wtf`) when
-it is French, German, Spanish or Russian, English otherwise; the language can
-be changed at the top right. The item names come in the game's language too. It only reads: the database, the game and the server's files are never
-written. The installer leaves `tools` out of the server's sources.
+## How to install
 
-`tools/loot-editor/build.cmd` builds it with PyInstaller and Pillow
-(`python -m pip install pyinstaller pillow`); without building,
-`python tools/loot-editor/loot_editor.py`. Its `core.py`, `manifest.py`, `window.py`,
-`mpq_archive.py` and `wow_exe.py` are copies of the
-[WoW-mods installer](https://github.com/Adrestie/WoW-mods-installer)'s engine
-(MIT), refreshed from there unchanged; the editor itself is MIT as well.
+1. Download `installer.exe` from the [WoW-mods-installer releases](https://github.com/Adrestie/WoW-mods-installer/releases).
+2. Stop the worldserver.
+3. Run `installer.exe`, give it this folder and the folders it asks for, click **Check**, then **Install**.
+4. Rebuild the worldserver.
 
-Original module, GPL-2.0-or-later, the licence of AzerothCore it is compiled
-into.
+## How to update
+
+Same steps with the new version's folder, choosing **Update** instead of **Install**. Rebuild the worldserver.
+
+## How to uninstall
+
+Same steps, choosing **Remove**. The modules that use it lose their drops until it is back. Rebuild the worldserver.
+
+## Configuration
+
+DynamicLoot has no `.conf` of its own: each module that uses it sets its drops in its own `.conf` (`<Module>.Loot.*` lines: family, item or list, chance, quantity, and a rate on top).
+
+## Commands
+
+| Command | |
+|---|---|
+| `.dynamicloot pity` | game master: shows or sets a player's bad luck protection |
